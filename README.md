@@ -15,6 +15,9 @@ A comprehensive HTTP caching library for Flutter applications. This library impl
 - ✅ **Offline Support** - Serve stale responses when disconnected
 - ✅ **Thread-Safe** - Concurrent request handling with proper synchronization
 
+## Demo
+https://www.youtube.com/shorts/81rV5GzXYaI
+
 ## Installation
 
 Add this to your package's `pubspec.yaml` file:
