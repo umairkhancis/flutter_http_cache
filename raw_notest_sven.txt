@@ -1,0 +1,73 @@
+
+Component-based cache Support
+It should be easy to integrate.
+It should be easy to implement business rules
+Full screen can be a full response cache.
+Specific Components: can be part of the response.
+These business rules can be compatible with the current state
+The backend can provide it through Cache-Control
+Developers can do it on DTO with any kind of tagging.
+JsonPath or whatever make it easy for developers to implement the cache rules
+Response Aware of caching control per property
+Developers can define the cache invalidation easily (Currently: TTL, LRU, LFU and Composite with any of them)
+Business-aware cache rules (Data-Type Based Invalidation Strategy)
+Vendor availability: 30 second TTL + push notifications (real-time critical)
+Menus: 6-hour TTL + background refresh (staleness acceptable)
+Cart: Immediate write-through (strong consistency required)
+Orders: 10-second polling when active (contextual freshness)
+Incientive: 30-minute TTL (staleness acceptable)
+Static content (Static Vendor Data): Version-based, invalidate on deploy (rarely changes)
+
+It should support multiple cache strategies per cache type (cache first, fallback) for the same set of data
+It should have backwards compatibility, as losing all the cache is impacting our Screen performance and Screen availability, which is impacting the CVR and GMV
+
+API Design Decision Framework Summary
+Low-Level: Implement patterns correctly
+Focus: TTL values, clear on events, pull-to-refresh
+
+Mid-Level: Optimize patterns for mobile constraints
+Focus: Battery life, network costs, storage limits, UX perception
+
+High-Level: Design invalidation strategy for business outcomes
+Focus: GMV impact, system reliability, scaling properties, failure modes
+Invalidation Delivery Mechanisms
+Can we invalidate remotely?
+Can we change invalidation rules remotely?
+
+Cache Performance
+Business Impact
+GMV Impact Dashboard
+How many sessions were converted from the Mobile Errors?
+How can we classify the Mobile errors for all app requests?
+How much do we use Storage and Network?
+Technical Impact
+Cache hit rate targets (>XX% for mature features)
+Stale read rate (<X.X% for critical data)
+Invalidation latency (push → local cache cleared < xxxms)
+Background sync success rate (>XX%) (If Needed)
+Mobile restrictions
+Battery usage for IO operations
+Considering Memory and local storage, and how to adjust the cache manager behaviour
+For example, use session-based memory caching in case not enough storage is available
+If IO is a bottleneck of the performance
+Should we have a multi-tier Cache Strategy L1(memory), L2 (Local storage)
+
+Open Questions:
+How do we support the Offline-First Architecture (domain models such as vendor, rating, etc.)? (Static Vendor data sync up)
+Local mutations queued during offline
+Sync when reconnected
+Conflict resolution strategy (last-write-wins vs merge)
+Optimistic updates for perceived performance
+How to enforce DH/Talabat global business rules?
+Global Services data caching.
+CPC, Ads, banners, and NMR & NCR components
+Tracking reporting
+
+## WishList
+- Offline first app.
+- easier to integrate for teams
+-
+
+## Challenges
+- Backward compatibility.
+
