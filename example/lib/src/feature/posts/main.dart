@@ -30,7 +30,7 @@ void main() async {
       enableHeuristicFreshness: true,
       serveStaleOnError: true,
       enableLogging: true,
-      useDio: false, // Using standard HTTP client
+      httpClientType: HttpClientType.defaultHttp,
     ),
   );
 

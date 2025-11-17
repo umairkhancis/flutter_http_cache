@@ -1,6 +1,7 @@
 import 'package:flutter_http_cache/src/data/storage.dart';
 import 'package:flutter_http_cache/src/domain/valueobject/cache_type.dart';
 import 'package:flutter_http_cache/src/domain/valueobject/eviction_strategy.dart';
+import 'package:flutter_http_cache/src/domain/valueobject/http_client_type.dart';
 
 /// Configuration for the HTTP cache
 class CacheConfig {
@@ -38,7 +39,7 @@ class CacheConfig {
   final bool enableLogging;
 
   // HTTP client implementation
-  final bool useDio;
+  final HttpClientType httpClientType;
 
   const CacheConfig({
     this.maxMemorySize = 10 * 1024 * 1024, // 10MB
@@ -56,7 +57,7 @@ class CacheConfig {
     this.databasePath,
     this.customStorage,
     this.enableLogging = false,
-    this.useDio = false,
+    this.httpClientType = HttpClientType.defaultHttp,
   });
 
   CacheConfig copyWith({
@@ -96,7 +97,7 @@ class CacheConfig {
       databasePath: databasePath ?? this.databasePath,
       customStorage: customStorage ?? this.customStorage,
       enableLogging: enableLogging ?? this.enableLogging,
-      useDio: useDio ?? this.useDio,
+      httpClientType: httpClientType,
     );
   }
 }

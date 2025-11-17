@@ -13,3 +13,4 @@ export 'src/domain/valueobject/cache_type.dart' show CacheType;
 export 'src/domain/valueobject/eviction_strategy.dart' show EvictionStrategy;
 export 'src/domain/valueobject/http_cache_request.dart' show HttpCacheRequest;
 export 'src/domain/valueobject/http_cache_response.dart' show HttpCacheResponse;
+export 'src/domain/valueobject/http_client_type.dart' show HttpClientType;

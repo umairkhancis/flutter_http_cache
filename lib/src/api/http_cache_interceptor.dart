@@ -15,7 +15,7 @@ class HttpCacheInterceptor {
 
   HttpCacheInterceptor({
     required this.cache,
-  }) : httpExecutor = HttpClientFactory.create(useDio: cache.config.useDio);
+  }) : httpExecutor = HttpClientFactory.create(cache.config.httpClientType);
 
   /// Sends an HTTP request with caching
   Future<http.Response> send(
@@ -158,7 +158,8 @@ class HttpCacheInterceptor {
       }
       // Network error - try to serve stale if allowed
       // For networkFirst policy, always try to serve stale on error
-      if (cache.config.serveStaleOnError || cachePolicy == CachePolicy.networkFirst) {
+      if (cache.config.serveStaleOnError ||
+          cachePolicy == CachePolicy.networkFirst) {
         final cachedResponse = await cache.get(
           method: method,
           uri: uri,

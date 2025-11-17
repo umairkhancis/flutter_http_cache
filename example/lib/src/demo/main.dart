@@ -21,7 +21,7 @@ void main() async {
       serveStaleOnError: true,
       enableLogging: true,
       // Enable logging for debugging
-      useDio: true,
+      httpClientType: HttpClientType.defaultHttp,
     ),
   );
 
