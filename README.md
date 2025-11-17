@@ -17,9 +17,6 @@ calculation, and intelligent cache eviction strategies.
 - ✅ **Offline Support** - Serve stale responses when disconnected
 - ✅ **Thread-Safe** - Concurrent request handling with proper synchronization
 
-## Demo
-https://github.com/user-attachments/assets/4af64ebc-71c1-45f9-8028-2d5c288f8fe3
-
 ## Installation
 
 Add this to your package's `pubspec.yaml` file:
