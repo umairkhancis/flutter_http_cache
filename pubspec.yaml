@@ -1,7 +1,7 @@
 name: flutter_http_cache
 description: HTTP caching library for Flutter applications
-version: 0.1.0
-# repository: https://github.com/umairkhancis/flutter_http_cache
+version: 0.0.1
+repository: https://github.com/umairkhancis/flutter_http_cache
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
