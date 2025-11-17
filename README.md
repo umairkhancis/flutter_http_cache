@@ -17,34 +17,6 @@ calculation, and intelligent cache eviction strategies.
 - ✅ **Offline Support** - Serve stale responses when disconnected
 - ✅ **Thread-Safe** - Concurrent request handling with proper synchronization
 
-
-## Demo
-
-### Step 1: Run the `example/lib/src/demo/main.dart`
-
-<img width="1080" height="2400" alt="Screenshot_20251117_141325" src="https://github.com/user-attachments/assets/b1881dcb-eb1b-4af4-8aec-e86e9a7b7b39" />
-
-### Step 2: Use example curl command
-
-<img width="1080" height="2400" alt="Screenshot_20251117_141353" src="https://github.com/user-attachments/assets/69a891bb-8ddb-4249-aba2-40de0b636721" />
-
-### Step 3: Select your strategy according to your use case.
-
-<img width="1080" height="2400" alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/656e4913-4401-41ee-9788-29ac377183db" />
-
-### Step 4: Observe entries count before hitting the request button and after hitting request button there is a Cache Miss and Latency is as per the network, as it is a first time call.
-
-<img width="1080" height="2400" alt="Screenshot_20251117_141428" src="https://github.com/user-attachments/assets/d18ff078-b56d-4ee2-910a-142131b88a2a" />
-
-### Step 5: Observe there is a Cache Hit now and Latency is very low, as it is a second call and served from the cache.
-
-<img width="1080" height="2400" alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/8421e83b-db12-4b1f-a963-8944a4971048" />
-
-
-
-
-
-
 ## Installation
 
 Add this to your package's `pubspec.yaml` file:
@@ -1468,3 +1440,20 @@ You can absolutely use the cache API separately without HTTP by:
 
 The library's internal logic for age calculation, freshness determination, and validation can all be
 reused even when metadata comes from the response body instead of HTTP headers.
+
+## Demo
+
+### Step 1: Run the `example/lib/src/demo/main.dart`
+<img width="1080" height="2400" alt="Screenshot_20251117_141325" src="https://github.com/user-attachments/assets/b1881dcb-eb1b-4af4-8aec-e86e9a7b7b39" />
+
+### Step 2: Use example curl command
+<img width="1080" height="2400" alt="Screenshot_20251117_141353" src="https://github.com/user-attachments/assets/69a891bb-8ddb-4249-aba2-40de0b636721" />
+
+### Step 3: Select your strategy according to your use case.
+<img width="1080" height="2400" alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/656e4913-4401-41ee-9788-29ac377183db" />
+
+### Step 4: Observe entries count before hitting the request button and after hitting request button there is a Cache Miss and Latency is as per the network, as it is a first time call.
+<img width="1080" height="2400" alt="Screenshot_20251117_141428" src="https://github.com/user-attachments/assets/d18ff078-b56d-4ee2-910a-142131b88a2a" />
+
+### Step 5: Observe there is a Cache Hit now and Latency is very low, as it is a second call and served from the cache.
+<img width="1080" height="2400" alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/8421e83b-db12-4b1f-a963-8944a4971048" />
