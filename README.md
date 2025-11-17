@@ -20,24 +20,25 @@ calculation, and intelligent cache eviction strategies.
 
 ## Demo
 
-<img alt="Screenshot_20251117_141325" src="https://github.com/user-attachments/assets/db2ef973-ddf5-4386-ad45-77f88aff8845" />
+### Step 1: Run the `example/lib/src/demo/main.dart`
 
-<img alt="Screenshot_20251117_141353" src="https://github.com/user-attachments/assets/93db27a1-9a96-45f3-87c6-e15f1b54266a" />
+<img width="1080" height="2400" alt="Screenshot_20251117_141325" src="https://github.com/user-attachments/assets/b1881dcb-eb1b-4af4-8aec-e86e9a7b7b39" />
 
-<img alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/bcd6af5e-0230-4d97-a0c1-9b5b27313b05" />
+### Step 2: Use example curl command
 
-<img alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/bcd6af5e-0230-4d97-a0c1-9b5b27313b05" />
+<img width="1080" height="2400" alt="Screenshot_20251117_141353" src="https://github.com/user-attachments/assets/69a891bb-8ddb-4249-aba2-40de0b636721" />
 
-<img alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/771288a6-ffce-4a87-9a7b-349eb9dd3dc7" />
+### Step 3: Select your strategy according to your use case.
 
-<img alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/771288a6-ffce-4a87-9a7b-349eb9dd3dc7" />
+<img width="1080" height="2400" alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/656e4913-4401-41ee-9788-29ac377183db" />
 
-<img alt="Screenshot_20251117_141451" src="https://github.com/user-attachments/assets/a99d4c8a-f79c-4674-ae30-a3311260eb95" />
+### Step 4: Observe entries count before hitting the request button and after hitting request button there is a Cache Miss and Latency is as per the network, as it is a first time call.
 
-<img alt="Screenshot_20251117_141428" src="https://github.com/user-attachments/assets/b2f2be79-09be-4bf2-965c-12a006e3f091" />
+<img width="1080" height="2400" alt="Screenshot_20251117_141428" src="https://github.com/user-attachments/assets/d18ff078-b56d-4ee2-910a-142131b88a2a" />
 
+### Step 5: Observe there is a Cache Hit now and Latency is very low, as it is a second call and served from the cache.
 
-
+<img width="1080" height="2400" alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/8421e83b-db12-4b1f-a963-8944a4971048" />
 
 
 
