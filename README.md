@@ -17,6 +17,33 @@ calculation, and intelligent cache eviction strategies.
 - ✅ **Offline Support** - Serve stale responses when disconnected
 - ✅ **Thread-Safe** - Concurrent request handling with proper synchronization
 
+
+## Demo
+
+<img alt="Screenshot_20251117_141325" src="https://github.com/user-attachments/assets/db2ef973-ddf5-4386-ad45-77f88aff8845" />
+
+<img alt="Screenshot_20251117_141353" src="https://github.com/user-attachments/assets/93db27a1-9a96-45f3-87c6-e15f1b54266a" />
+
+<img alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/bcd6af5e-0230-4d97-a0c1-9b5b27313b05" />
+
+<img alt="Screenshot_20251117_141414" src="https://github.com/user-attachments/assets/bcd6af5e-0230-4d97-a0c1-9b5b27313b05" />
+
+<img alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/771288a6-ffce-4a87-9a7b-349eb9dd3dc7" />
+
+<img alt="Screenshot_20251117_141436" src="https://github.com/user-attachments/assets/771288a6-ffce-4a87-9a7b-349eb9dd3dc7" />
+
+<img alt="Screenshot_20251117_141451" src="https://github.com/user-attachments/assets/a99d4c8a-f79c-4674-ae30-a3311260eb95" />
+
+<img alt="Screenshot_20251117_141428" src="https://github.com/user-attachments/assets/b2f2be79-09be-4bf2-965c-12a006e3f091" />
+
+
+
+
+
+
+
+
+
 ## Installation
 
 Add this to your package's `pubspec.yaml` file:
