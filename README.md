@@ -15,7 +15,7 @@ A comprehensive HTTP caching library for Flutter with browser-style caching sema
 
 ```yaml
 dependencies:
-  flutter_http_cache: ^0.0.2
+  flutter_http_cache: ^0.0.3
 ```
 
 ## Quick Start
