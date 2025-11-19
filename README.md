@@ -77,54 +77,205 @@ CachedHttpClient(cache: cache, defaultCachePolicy: CachePolicy.cacheOnly);
 
 ## Dio Integration
 
-For apps already using Dio, simply add the cache interceptor to your existing Dio instance:
+### For Apps Already Using Dio
+
+If your app already uses Dio, adding HTTP caching is just **one line of code**! The cache interceptor integrates seamlessly with your existing Dio setup.
+
+#### Step-by-Step Integration
 
 ```dart
 import 'package:dio/dio.dart';
 import 'package:flutter_http_cache/flutter_http_cache.dart';
 
-// 1. Initialize cache
+// Step 1: Initialize the cache (do this once at app startup)
 final cache = HttpCache(
   config: const CacheConfig(
-    enableLogging: true,
+    maxMemorySize: 10 * 1024 * 1024,  // 10MB memory cache
+    maxDiskSize: 50 * 1024 * 1024,    // 50MB disk cache
+    enableLogging: true,               // See cache hits/misses
+    serveStaleOnError: true,           // Offline support
   ),
 );
 await cache.initialize();
 
-// 2. Create Dio with your existing configuration and interceptors
+// Step 2: Add the interceptor to your existing Dio instance
+// Keep all your existing configuration and interceptors!
 final dio = Dio(BaseOptions(
   baseUrl: 'https://api.example.com',
   connectTimeout: Duration(seconds: 5),
+  receiveTimeout: Duration(seconds: 3),
 ));
 
-// Add your existing interceptors
+// Your existing interceptors continue to work
 dio.interceptors.add(LogInterceptor());
+dio.interceptors.add(AuthInterceptor());  // Your custom interceptors
 
-// 3. Add the cache interceptor - that's it!
+// Add the cache interceptor - that's it!
 dio.interceptors.add(DioHttpCacheInterceptor(cache));
 
-// 4. Use Dio normally - all requests are automatically cached
+// Step 3: Use Dio normally - caching is automatic!
 final response = await dio.get('/posts/1');
+print(response.headers.value('x-cache'));  // HIT, MISS, or HIT-STALE
+```
 
-// Optional: Override cache policy per-request
-final response = await dio.get(
-  '/posts/1',
+#### How It Works
+
+The `DioHttpCacheInterceptor` is a standard Dio interceptor that:
+
+1. **Checks cache before network request** - Returns cached data if fresh
+2. **Validates stale cache** - Sends conditional requests (If-None-Match, If-Modified-Since)
+3. **Handles 304 responses** - Updates cache metadata, returns cached body
+4. **Stores successful responses** - Automatically caches GET requests
+5. **Invalidates on mutations** - Clears related cache on POST/PUT/DELETE
+
+**All of this happens automatically with zero changes to your existing code!**
+
+#### Per-Request Cache Control
+
+Override cache behavior for specific requests using `options.extra`:
+
+```dart
+// Force network request (bypass cache)
+await dio.get(
+  '/users/profile',
   options: Options(
-    extra: {
-      'cachePolicy': CachePolicy.networkFirst,
-    },
+    extra: {'cachePolicy': CachePolicy.networkOnly},
+  ),
+);
+
+// Try cache first, fallback to network
+await dio.get(
+  '/settings',
+  options: Options(
+    extra: {'cachePolicy': CachePolicy.cacheFirst},
+  ),
+);
+
+// Network first, fallback to stale cache on error (great for offline support)
+await dio.get(
+  '/products',
+  options: Options(
+    extra: {'cachePolicy': CachePolicy.networkFirst},
+  ),
+);
+
+// Cache only (never make network request)
+await dio.get(
+  '/offline-data',
+  options: Options(
+    extra: {'cachePolicy': CachePolicy.cacheOnly},
   ),
 );
 ```
 
-**Key Benefits**:
-- ✅ Zero changes to existing Dio code
-- ✅ Works with all existing interceptors
-- ✅ Per-request cache policy override via `options.extra`
-- ✅ Automatic cache invalidation on POST/PUT/DELETE
-- ✅ 304 Not Modified handling
+#### Available Cache Policies
 
-See `example/lib/src/demo/dio_interceptor_example.dart` for a complete working example.
+| Policy | Behavior | Use Case |
+|--------|----------|----------|
+| `CachePolicy.standard` | HTTP standard caching (respects Cache-Control headers) | Default, works like browser cache |
+| `CachePolicy.networkOnly` | Always fetch from network, store in cache | Force refresh |
+| `CachePolicy.networkFirst` | Network first, serve stale on error | Offline support |
+| `CachePolicy.cacheFirst` | Cache first, network if not cached | Offline-first apps |
+| `CachePolicy.cacheOnly` | Never make network request | Offline mode |
+
+#### Response Data Handling
+
+**Important**: Cached responses return data in the **same format** as network responses:
+
+```dart
+// Both network and cache return decoded JSON
+final response = await dio.get('/posts/1');
+print(response.data['title']);  // Works for both cache hit and miss!
+
+// Supported response types:
+// ✅ JSON objects/arrays (auto-parsed)
+// ✅ Plain text strings
+// ✅ Binary data (images, files)
+```
+
+The interceptor automatically decodes cached responses to match Dio's normal behavior, so your app code works identically whether the response came from cache or network.
+
+#### Cache Management
+
+```dart
+// Check cache statistics
+final stats = await cache.getStats();
+print('Cache entries: ${stats['entries']}');
+print('Cache size: ${stats['bytesFormatted']}');
+
+// Clear entire cache
+await cache.clear();
+
+// Clear only expired entries
+await cache.clearExpired();
+
+// Don't forget to close the cache when done (e.g., app disposal)
+await cache.close();
+```
+
+#### Advanced: Cache Headers for Debugging
+
+Every response includes cache debugging headers:
+
+```dart
+final response = await dio.get('/data');
+
+// Check cache status
+print(response.headers.value('x-cache'));
+// "HIT" = served from cache
+// "MISS" = network request
+// "HIT-STALE" = served stale cache
+
+// Check age
+print(response.headers.value('age'));
+// Age in seconds (0 for fresh responses)
+
+// Check warnings (for stale responses)
+print(response.headers.value('warning'));
+// e.g., "110 - Response is Stale"
+```
+
+#### Key Benefits
+
+- ✅ **Zero breaking changes** - Works with existing code
+- ✅ **Works with all interceptors** - Compatible with auth, logging, retry, etc.
+- ✅ **Per-request control** - Override cache policy per request
+- ✅ **Automatic invalidation** - POST/PUT/DELETE clear related cache
+- ✅ **304 Not Modified** - Efficient revalidation
+- ✅ **Offline support** - Serve stale cache on network errors
+- ✅ **Type-safe** - Same response data format as network
+- ✅ **Transparent** - App logic doesn't need to know about caching
+
+#### Complete Working Example
+
+See `example/lib/src/demo/dio_interceptor_example.dart` for a full Flutter app demonstrating:
+- Multiple cache policies
+- Cache statistics display
+- Network error handling
+- POST request cache invalidation
+- Real-time cache status indicators
+
+#### Migration from Other Cache Solutions
+
+If you're migrating from another cache library:
+
+```dart
+// Before: Using dio_cache_interceptor or dio_http_cache
+dio.interceptors.add(DioCacheInterceptor(options: cacheOptions));
+
+// After: Using flutter_http_cache
+dio.interceptors.add(DioHttpCacheInterceptor(cache));
+
+// That's it! Your existing Dio code continues to work unchanged.
+```
+
+**Why switch?**
+- ✅ Full HTTP standard compliance (Cache-Control, ETags, etc.)
+- ✅ Two-tier storage (memory + disk)
+- ✅ Multiple eviction strategies (LRU, LFU, FIFO, TTL)
+- ✅ Better offline support (serve stale on error)
+- ✅ Proper response decoding (JSON auto-parsed from cache)
+- ✅ Active maintenance and comprehensive tests
 
 ## Core Concepts
 
