@@ -80,6 +80,10 @@ class _DioExamplePageState extends State<DioExamplePage> {
       baseUrl: 'https://jsonplaceholder.typicode.com',
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 3),
+      headers: {
+        'User-Agent': 'Flutter HTTP Cache Example/1.0',
+        'Accept': 'application/json',
+      },
     ));
 
     // 3. Add your existing interceptors
