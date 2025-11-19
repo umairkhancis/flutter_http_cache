@@ -75,6 +75,57 @@ CachedHttpClient(cache: cache, defaultCachePolicy: CachePolicy.cacheFirst);
 CachedHttpClient(cache: cache, defaultCachePolicy: CachePolicy.cacheOnly);
 ```
 
+## Dio Integration
+
+For apps already using Dio, simply add the cache interceptor to your existing Dio instance:
+
+```dart
+import 'package:dio/dio.dart';
+import 'package:flutter_http_cache/flutter_http_cache.dart';
+
+// 1. Initialize cache
+final cache = HttpCache(
+  config: const CacheConfig(
+    enableLogging: true,
+  ),
+);
+await cache.initialize();
+
+// 2. Create Dio with your existing configuration and interceptors
+final dio = Dio(BaseOptions(
+  baseUrl: 'https://api.example.com',
+  connectTimeout: Duration(seconds: 5),
+));
+
+// Add your existing interceptors
+dio.interceptors.add(LogInterceptor());
+
+// 3. Add the cache interceptor - that's it!
+dio.interceptors.add(DioHttpCacheInterceptor(cache));
+
+// 4. Use Dio normally - all requests are automatically cached
+final response = await dio.get('/posts/1');
+
+// Optional: Override cache policy per-request
+final response = await dio.get(
+  '/posts/1',
+  options: Options(
+    extra: {
+      'cachePolicy': CachePolicy.networkFirst,
+    },
+  ),
+);
+```
+
+**Key Benefits**:
+- ✅ Zero changes to existing Dio code
+- ✅ Works with all existing interceptors
+- ✅ Per-request cache policy override via `options.extra`
+- ✅ Automatic cache invalidation on POST/PUT/DELETE
+- ✅ 304 Not Modified handling
+
+See `example/lib/src/demo/dio_interceptor_example.dart` for a complete working example.
+
 ## Core Concepts
 
 ### Cache-Control Directives

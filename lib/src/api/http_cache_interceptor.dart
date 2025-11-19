@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter_http_cache/flutter_http_cache.dart';
-import 'package:flutter_http_cache/src/domain/service/header_utils.dart';
+import 'package:flutter_http_cache/src/domain/service/cache_interceptor_service.dart';
 import 'package:http/http.dart' as http;
 
 import 'http_client.dart';
@@ -9,13 +9,19 @@ import 'http_client_factory.dart';
 
 /// HTTP cache interceptor for http package
 /// Intercepts HTTP requests and responses to provide caching
+///
+/// This is a thin adapter that uses [CacheInterceptorService] for all caching logic,
+/// following the Dependency Inversion Principle.
 class HttpCacheInterceptor {
   final HttpCache cache;
   final HttpClient httpExecutor;
+  late final CacheInterceptorService _service;
 
   HttpCacheInterceptor({
     required this.cache,
-  }) : httpExecutor = HttpClientFactory.create(cache.config.httpClientType);
+  }) : httpExecutor = HttpClientFactory.create(cache.config.httpClientType) {
+    _service = CacheInterceptorService(cache);
+  }
 
   /// Sends an HTTP request with caching
   Future<http.Response> send(
@@ -31,254 +37,149 @@ class HttpCacheInterceptor {
 
     if (cache.config.enableLogging) {
       developer.log(
-        'CachedHttpClient.send: $method $uri (policy: ${cachePolicy.name})',
+        'HttpCacheInterceptor.send: $method $uri (policy: ${cachePolicy.name})',
         name: 'flutter_http_cache',
       );
     }
 
-    // For networkOnly and networkFirst policies, skip cache lookup
-    if (cachePolicy != CachePolicy.networkOnly &&
-        cachePolicy != CachePolicy.networkFirst) {
-      // Try to get from cache
-      final cachedResponse = await cache.get(
-        method: method,
-        uri: uri,
-        requestHeaders: requestHeaders,
-        policy: cachePolicy,
-      );
+    // Delegate cache lookup to service
+    final result = await _service.handleRequest(
+      method: method,
+      uri: uri,
+      requestHeaders: requestHeaders,
+      cachePolicy: cachePolicy,
+    );
 
-      if (cachedResponse != null) {
-        if (!cachedResponse.requiresValidation) {
-          // Cache hit - return cached response
-          if (cache.config.enableLogging) {
-            developer.log(
-              'CachedHttpClient: Cache ${cachedResponse.isStale ? "HIT-STALE" : "HIT"} (age: ${cachedResponse.age}s)',
-              name: 'flutter_http_cache',
-            );
-          }
-          return _createResponseFromCache(
-            cachedResponse.entry,
-            cachedResponse.age,
-            cachedResponse.isStale,
-          );
-        } else {
-          // Cache hit but requires validation
-          if (cache.config.enableLogging) {
-            developer.log(
-              'CachedHttpClient: Cache entry requires validation',
-              name: 'flutter_http_cache',
-            );
-          }
-          return await _validateAndReturn(
-            request,
-            cachedResponse.entry,
-            cachePolicy,
-          );
-        }
-      }
+    return switch (result) {
+      // Cache hit - return cached response
+      CachedResult() => _createResponseFromCachedResult(result),
 
-      // Cache miss for cacheOnly policy
-      if (cachePolicy == CachePolicy.cacheOnly) {
-        if (cache.config.enableLogging) {
-          developer.log(
-            'CachedHttpClient: Cache MISS with cacheOnly policy',
-            name: 'flutter_http_cache',
-          );
-        }
-        return http.Response(
+      // Continue with network request (possibly with validation)
+      ContinueWithRequest() => await _executeNetworkRequest(
+          request,
+          cachePolicy,
+          result.validationHeaders,
+          result.cachedEntry,
+        ),
+
+      // Cache miss with cacheOnly policy
+      ErrorResult() => http.Response(
           '',
-          504, // Gateway Timeout
-          headers: {'x-cache': 'MISS'},
-          reasonPhrase: 'Cache Miss - only-if-cached',
-        );
-      }
-    }
+          result.statusCode,
+          headers: result.headers,
+          reasonPhrase: result.message,
+        ),
+    };
+  }
 
-    // Make network request
+  /// Executes a network request and handles the response
+  Future<http.Response> _executeNetworkRequest(
+    http.Request originalRequest,
+    CachePolicy cachePolicy,
+    Map<String, String>? validationHeaders,
+    CacheEntry? cachedEntry,
+  ) async {
     try {
+      // Create request with validation headers if provided
+      final request = http.Request(
+        originalRequest.method,
+        originalRequest.url,
+      )..headers.addAll(originalRequest.headers);
+
+      if (validationHeaders != null) {
+        request.headers.addAll(validationHeaders);
+      }
+
       if (cache.config.enableLogging) {
         developer.log(
-          'CachedHttpClient: Making network request',
+          'HttpCacheInterceptor: Making network request',
           name: 'flutter_http_cache',
         );
       }
+
       final requestTime = DateTime.now();
       final response = await httpExecutor.send(request);
       final responseTime = DateTime.now();
 
       if (cache.config.enableLogging) {
         developer.log(
-          'CachedHttpClient: Network response received (status: ${response.statusCode}, size: ${response.bodyBytes.length} bytes)',
+          'HttpCacheInterceptor: Network response received (status: ${response.statusCode}, size: ${response.bodyBytes.length} bytes)',
           name: 'flutter_http_cache',
         );
       }
 
-      // Store in cache if appropriate
-      await _storeResponse(
-        method: method,
-        uri: uri,
+      // Delegate response handling to service
+      final result = await _service.handleResponse(
+        method: originalRequest.method,
+        uri: originalRequest.url,
         statusCode: response.statusCode,
-        requestHeaders: requestHeaders,
+        requestHeaders: originalRequest.headers,
         responseHeaders: response.headers,
         body: response.bodyBytes,
         requestTime: requestTime,
         responseTime: responseTime,
+        cachedEntry: cachedEntry,
       );
 
-      // Invalidate on unsafe methods
-      if (HeaderUtils.isUnsafeMethod(method)) {
-        await cache.invalidateOnUnsafeMethod(
-          method: method,
-          uri: uri,
-          statusCode: response.statusCode,
-          requestHeaders: requestHeaders,
-          responseHeaders: response.headers,
-        );
-      }
+      return switch (result) {
+        // 304 response - use updated cache
+        UseUpdatedCache() => _createResponseFromCache(
+            result.entry,
+            0,
+            false,
+          ),
 
-      return http.Response.bytes(
-        response.bodyBytes,
-        response.statusCode,
-        headers: _addAgeHeader(response.headers, 0),
-        reasonPhrase: response.reasonPhrase,
-      );
+        // Normal response - use network response
+        UseNetworkResponse() => http.Response.bytes(
+            response.bodyBytes,
+            response.statusCode,
+            headers: _addAgeHeader(response.headers, 0),
+            reasonPhrase: response.reasonPhrase,
+          ),
+      };
     } catch (e) {
       developer.log(
-        'CachedHttpClient: Network request failed: $e',
+        'HttpCacheInterceptor: Network request failed: $e',
         name: 'flutter_http_cache',
         error: e,
       );
 
-      if (cache.config.enableLogging) {
-        developer.log(
-          'CachedHttpClient: Network request failed: $e',
-          name: 'flutter_http_cache',
-          error: e,
-        );
-      }
-      // Network error - try to serve stale if allowed
-      // For networkFirst policy, always try to serve stale on error
-      if (cache.config.serveStaleOnError ||
-          cachePolicy == CachePolicy.networkFirst) {
-        final cachedResponse = await cache.get(
-          method: method,
-          uri: uri,
-          requestHeaders: requestHeaders,
-          policy: CachePolicy.cacheFirst,
-        );
+      // Delegate error handling to service
+      final errorResult = await _service.handleError(
+        method: originalRequest.method,
+        uri: originalRequest.url,
+        requestHeaders: originalRequest.headers,
+        cachePolicy: cachePolicy,
+      );
 
-        if (cachedResponse != null) {
-          return _createResponseFromCache(
-            cachedResponse.entry,
-            cachedResponse.age,
-            true, // isStale
+      return switch (errorResult) {
+        // Serve stale cache on error
+        ServeStaleCache() => _createResponseFromCache(
+            errorResult.entry,
+            errorResult.age,
+            true,
             warning: '111 - "Revalidation Failed"',
-          );
-        }
-      }
+          ),
 
-      // Rethrow if no stale response available
-      rethrow;
+        // Propagate error
+        PropagateError() => throw e,
+      };
     }
   }
 
-  /// Validates a cached response and returns updated response
-  Future<http.Response> _validateAndReturn(
-    http.Request originalRequest,
-    CacheEntry cachedEntry,
-    CachePolicy cachePolicy,
-  ) async {
-    // Generate validation headers
-    final validationHeaders = cache.generateValidationHeaders(
-      cachedEntry,
-      originalRequest.headers,
+  /// Creates an HTTP response from a cached result
+  http.Response _createResponseFromCachedResult(CachedResult result) {
+    final headers = _service.createCachedResponseHeaders(
+      result.entry,
+      result.age,
+      result.isStale,
+      warning: result.warning,
     );
 
-    // Create validation request
-    final validationRequest = http.Request(
-      originalRequest.method,
-      originalRequest.url,
-    )..headers.addAll(validationHeaders);
-
-    try {
-      final requestTime = DateTime.now();
-      final response = await httpExecutor.send(validationRequest);
-      final responseTime = DateTime.now();
-
-      if (response.statusCode == 304) {
-        // Not Modified - update cached entry and return it
-        final updated = await cache.updateFrom304(
-          method: originalRequest.method,
-          uri: originalRequest.url,
-          requestHeaders: originalRequest.headers,
-          response304Headers: response.headers,
-          validationRequestTime: requestTime,
-          validationResponseTime: responseTime,
-        );
-
-        if (updated != null) {
-          return _createResponseFromCache(updated, 0, false);
-        }
-      } else {
-        // Full response - store and return
-        final body = response.bodyBytes;
-
-        await _storeResponse(
-          method: originalRequest.method,
-          uri: originalRequest.url,
-          statusCode: response.statusCode,
-          requestHeaders: originalRequest.headers,
-          responseHeaders: response.headers,
-          body: body,
-          requestTime: requestTime,
-          responseTime: responseTime,
-        );
-
-        return http.Response.bytes(
-          body,
-          response.statusCode,
-          headers: _addAgeHeader(response.headers, 0),
-          reasonPhrase: response.reasonPhrase,
-        );
-      }
-    } catch (e) {
-      // Validation failed - serve stale if allowed
-      if (cache.config.serveStaleOnError) {
-        return _createResponseFromCache(
-          cachedEntry,
-          cachedEntry.ageHeader ?? 0,
-          true,
-          warning: '111 - "Revalidation Failed"',
-        );
-      }
-      rethrow;
-    }
-
-    // Fallback
-    return _createResponseFromCache(
-        cachedEntry, cachedEntry.ageHeader ?? 0, false);
-  }
-
-  /// Stores a response in the cache
-  Future<void> _storeResponse({
-    required String method,
-    required Uri uri,
-    required int statusCode,
-    required Map<String, String> requestHeaders,
-    required Map<String, String> responseHeaders,
-    required List<int> body,
-    required DateTime requestTime,
-    required DateTime responseTime,
-  }) async {
-    await cache.put(
-      method: method,
-      uri: uri,
-      statusCode: statusCode,
-      requestHeaders: requestHeaders,
-      responseHeaders: responseHeaders,
-      body: body,
-      requestTime: requestTime,
-      responseTime: responseTime,
+    return http.Response.bytes(
+      result.entry.body,
+      result.entry.statusCode,
+      headers: headers,
     );
   }
 
@@ -289,21 +190,12 @@ class HttpCacheInterceptor {
     bool isStale, {
     String? warning,
   }) {
-    var headers = Map<String, String>.from(entry.headers);
-
-    // Add Age header
-    headers = _addAgeHeader(headers, age);
-
-    // Add warning if stale
-    if (isStale || warning != null) {
-      headers = HeaderUtils.addStaleWarning(
-        headers,
-        message: warning,
-      );
-    }
-
-    // Add X-Cache header for debugging
-    headers['x-cache'] = isStale ? 'HIT-STALE' : 'HIT';
+    final headers = _service.createCachedResponseHeaders(
+      entry,
+      age,
+      isStale,
+      warning: warning,
+    );
 
     return http.Response.bytes(
       entry.body,

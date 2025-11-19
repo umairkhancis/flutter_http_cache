@@ -6,6 +6,7 @@ library;
 export 'src/api/cache.dart' show HttpCache, CachedResponse;
 export 'src/api/cache_config.dart' show CacheConfig;
 export 'src/api/cached_http_client.dart' show CachedHttpClient;
+export 'src/api/dio_http_cache_interceptor.dart' show DioHttpCacheInterceptor;
 export 'src/data/storage.dart' show CacheStorage;
 export 'src/domain/valueobject/cache_entry.dart' show CacheEntry;
 export 'src/domain/valueobject/cache_policy.dart' show CachePolicy;
